@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cinemateca — Buscador</title>
+<style>
+  :root{
+    --bg: #15130f;
+    --panel: #1e1b16;
+    --panel-2: #262119;
+    --ink: #f2ece0;
+    --ink-dim: #b8ae9c;
+    --gold: #d6a94a;
+    --gold-dim: #8a713a;
+    --wine: #7a2e2e;
+    --line: #3a342a;
+    --mono: 'JetBrains Mono', 'Courier New', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse at top, rgba(214,169,74,0.06), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family: Georgia, 'Iowan Old Style', serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:32px 20px 80px;}
+
+  header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    border-bottom:1px solid var(--line);
+    padding-bottom:18px;
+    margin-bottom:28px;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  h1{
+    font-size:2rem;
+    letter-spacing:0.02em;
+    margin:0;
+    font-weight:400;
+  }
+  h1 em{
+    font-style:italic;
+    color:var(--gold);
+  }
+  .count{
+    font-family:var(--mono);
+    font-size:0.75rem;
+    color:var(--ink-dim);
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+  }
+
+  .section-block{
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:18px 18px 6px;
+    margin-bottom:24px;
+    background:rgba(255,255,255,0.012);
+  }
+  .section-header{
+    font-family:var(--mono);
+    font-size:0.72rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--gold);
+    margin-bottom:14px;
+    padding-bottom:10px;
+    border-bottom:1px solid var(--line);
+  }
+  .section-block .search-row{margin-bottom:6px;}
+  .section-block .tags-panel:last-child{margin-bottom:6px;}
+
+  .search-row{
+    display:flex;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  input[type="text"]{
+    flex:1;
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--ink);
+    font-family:var(--mono);
+    font-size:0.95rem;
+    padding:14px 16px;
+    border-radius:2px;
+    outline:none;
+    transition:border-color 0.15s;
+  }
+  input[type="text"]:focus{border-color:var(--gold-dim);}
+  input[type="text"]::placeholder{color:var(--ink-dim);}
+
+  .tags-panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:16px;
+    margin-bottom:28px;
+  }
+  .tags-panel .label{
+    font-family:var(--mono);
+    font-size:0.7rem;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--ink-dim);
+    margin-bottom:10px;
+  }
+  .tags-panel .label-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .tags-panel .label-row .label{margin-bottom:0;}
+  .clear-btn{
+    font-family:var(--mono);
+    font-size:0.68rem;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    color:var(--ink-dim);
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:4px 10px;
+    cursor:pointer;
+    transition:all 0.15s;
+  }
+  .clear-btn:hover{border-color:var(--wine);color:#c47a5a;}
+  .clear-btn:disabled{opacity:0.4;cursor:default;}
+  .clear-btn:disabled:hover{border-color:var(--line);color:var(--ink-dim);}
+
+  .tag-search-input{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--ink);
+    font-family:var(--mono);
+    font-size:0.8rem;
+    padding:9px 34px 9px 12px;
+    border-radius:2px;
+    outline:none;
+  }
+  .tag-search-input:focus{border-color:var(--gold-dim);}
+  .tag-search-input::placeholder{color:var(--ink-dim);}
+
+  .tag-search-wrap{
+    position:relative;
+    margin-bottom:8px;
+  }
+  .tag-search-clear{
+    position:absolute;
+    right:8px;
+    top:50%;
+    transform:translateY(-50%);
+    background:transparent;
+    border:none;
+    color:var(--ink-dim);
+    font-family:var(--mono);
+    font-size:0.85rem;
+    cursor:pointer;
+    padding:4px 6px;
+    line-height:1;
+  }
+  .tag-search-clear:hover{color:var(--gold);}
+
+  .tag-chips-selected{
+    padding-bottom:10px;
+    margin-top:6px;
+    margin-bottom:8px;
+    border-bottom:1px dashed var(--line);
+  }
+  .tag-chips-selected:empty{display:none;border-bottom:none;margin-top:0;margin-bottom:0;padding-bottom:0;}
+
+  .tag-suggestions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    padding-bottom:14px;
+    margin-bottom:14px;
+    border-bottom:1px dashed var(--line);
+  }
+  .tag-suggestions:empty{display:none;border-bottom:none;margin-bottom:0;padding-bottom:0;}
+
+  .tag-chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .tags-more-btn{
+    display:inline-block;
+    margin-top:12px;
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--gold);
+    font-family:var(--mono);
+    font-size:0.75rem;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    padding:8px 14px;
+    border-radius:20px;
+    cursor:pointer;
+    transition:all 0.15s;
+  }
+  .tags-more-btn:hover{border-color:var(--gold);background:rgba(214,169,74,0.08);}
+  .chip{
+    font-family:var(--mono);
+    font-size:0.8rem;
+    padding:6px 12px;
+    border:1px solid var(--line);
+    border-radius:20px;
+    color:var(--ink-dim);
+    cursor:pointer;
+    background:transparent;
+    transition:all 0.15s;
+    user-select:none;
+  }
+  .chip:hover{border-color:var(--gold-dim);color:var(--ink);}
+  .chip.active{
+    background:var(--gold);
+    border-color:var(--gold);
+    color:#100d07;
+    font-weight:700;
+    letter-spacing:0.015em;
+  }
+
+  .status{
+    font-family:var(--mono);
+    font-size:0.8rem;
+    color:var(--ink-dim);
+    margin-bottom:16px;
+    min-height:1.2em;
+  }
+  .status.err{color:#c47a5a;}
+
+  .query-summary:empty{display:none;}
+  .qs-line-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:3px;
+  }
+  .qs-line{
+    font-family:var(--mono);
+    font-size:0.68rem;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-dim);
+  }
+  .qs-clear-btn{
+    background:transparent;
+    border:none;
+    color:var(--ink-dim);
+    font-family:var(--mono);
+    font-size:0.75rem;
+    cursor:pointer;
+    padding:2px 4px;
+    line-height:1;
+  }
+  .qs-clear-btn:hover{color:#c47a5a;}
+
+  .filter-warning:empty{display:none;}
+  .fw-box{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    background:rgba(122,46,46,0.12);
+    border:1px solid var(--wine);
+    border-radius:2px;
+    padding:12px 14px;
+    margin-bottom:16px;
+  }
+  .fw-message{
+    font-family:var(--mono);
+    font-size:0.78rem;
+    color:#e0b3a3;
+    line-height:1.5;
+  }
+  .fw-message strong{color:var(--gold);}
+  .fw-clear-btn{
+    flex-shrink:0;
+    background:transparent;
+    border:1px solid var(--wine);
+    color:#e0b3a3;
+    font-family:var(--mono);
+    font-size:0.85rem;
+    width:30px;height:30px;
+    border-radius:50%;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:all 0.15s;
+  }
+  .fw-clear-btn:hover{background:var(--wine);color:var(--ink);}
+  .fw-cleared-msg{
+    font-family:var(--mono);
+    font-size:0.78rem;
+    color:var(--ink-dim);
+    margin-bottom:16px;
+  }
+  .qs-value{
+    font-family:var(--mono);
+    font-size:0.9rem;
+    color:var(--gold);
+    margin-bottom:14px;
+    word-break:break-word;
+  }
+  .qs-tags-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:16px;
+  }
+  .qs-tag{
+    font-family:var(--mono);
+    font-size:0.66rem;
+    padding:3px 9px;
+    background:var(--panel-2);
+    color:var(--gold);
+    border:1px solid var(--gold-dim);
+    border-radius:12px;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    white-space:nowrap;
+  }
+
+  .sort-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:18px;
+  }
+  .sort-row label{
+    font-family:var(--mono);
+    font-size:0.7rem;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--ink-dim);
+  }
+  .sort-row select{
+    flex:0 0 auto;
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--ink);
+    font-family:var(--mono);
+    font-size:0.8rem;
+    padding:8px 12px;
+    border-radius:2px;
+    outline:none;
+    cursor:pointer;
+  }
+  .sort-row select:focus{border-color:var(--gold-dim);}
+
+  .results{display:flex;flex-direction:column;gap:2px;}
+  .card{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    padding:20px;
+    background:var(--panel);
+    border:1px solid transparent;
+    border-bottom:1px solid var(--line);
+    transition:background 0.15s;
+    cursor:pointer;
+  }
+  .card:hover{background:var(--panel-2);}
+  .card:first-child{border-top:1px solid var(--line);}
+
+  .card-header{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+
+  .match-score{
+    font-family:var(--mono);
+    font-size:0.7rem;
+    color:var(--gold);
+    text-align:center;
+    border:1px solid var(--gold-dim);
+    border-radius:50%;
+    width:44px;height:44px;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .card-body{flex:1;min-width:0;}
+  .card-body .title{
+    font-size:1.25rem;
+    margin:0 0 6px;
+  }
+  .card-body .meta{
+    font-family:var(--mono);
+    font-size:0.8rem;
+    color:var(--ink-dim);
+    line-height:1.9;
+  }
+  .card-body .meta b{color:var(--ink);font-weight:500;}
+  .card-body .meta .meta-line{display:block;}
+  .card-tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    justify-content:flex-start;
+  }
+  .card-tags span{
+    font-family:var(--mono);
+    font-size:0.65rem;
+    padding:3px 8px;
+    background:var(--panel-2);
+    color:var(--ink-dim);
+    border-radius:12px;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+  }
+  .card-tags span.hit{
+    color:var(--gold);
+    background:rgba(214,169,74,0.12);
+  }
+
+  .empty{
+    text-align:center;
+    padding:60px 20px;
+    color:var(--ink-dim);
+    font-family:var(--mono);
+    font-size:0.85rem;
+  }
+
+  .config-note{
+    font-family:var(--mono);
+    font-size:0.7rem;
+    color:var(--ink-dim);
+    background:var(--panel);
+    border:1px dashed var(--line);
+    padding:12px 14px;
+    border-radius:2px;
+    margin-bottom:24px;
+    line-height:1.6;
+  }
+  .config-note code{color:var(--gold);}
+
+  /* Ficha (modal de detalle) */
+  .overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(10,9,7,0.75);
+    z-index:50;
+    align-items:flex-start;
+    justify-content:center;
+    padding:40px 20px;
+    overflow-y:auto;
+  }
+  .overlay.open{display:flex;}
+  .ficha{
+    background:var(--panel);
+    border:1px solid var(--gold-dim);
+    border-radius:2px;
+    max-width:560px;
+    width:100%;
+    padding:28px 28px 24px;
+    position:relative;
+  }
+  .ficha .close-btn{
+    position:absolute;
+    top:14px;
+    right:14px;
+    width:32px;
+    height:32px;
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--ink-dim);
+    font-family:var(--mono);
+    font-size:0.9rem;
+    border-radius:50%;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all 0.15s;
+  }
+  .ficha .close-btn:hover{border-color:var(--gold);color:var(--gold);}
+  .ficha h2{
+    font-size:1.5rem;
+    font-weight:400;
+    margin:0 0 4px;
+    padding-right:36px;
+  }
+  .ficha .ficha-sub{
+    font-family:var(--mono);
+    font-size:0.75rem;
+    color:var(--gold);
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    margin-bottom:20px;
+  }
+  .ficha dl{margin:0;}
+  .ficha .field{
+    border-top:1px solid var(--line);
+    padding:10px 0;
+    display:grid;
+    grid-template-columns:130px 1fr;
+    gap:12px;
+  }
+  .ficha .field:last-child{padding-bottom:0;}
+  .ficha dt{
+    font-family:var(--mono);
+    font-size:0.7rem;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--ink-dim);
+  }
+  .ficha dd{margin:0;font-size:0.95rem;line-height:1.5;}
+  .toggle-more{
+    margin-top:16px;
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--gold);
+    font-family:var(--mono);
+    font-size:0.75rem;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    padding:8px 14px;
+    border-radius:20px;
+    cursor:pointer;
+    transition:all 0.15s;
+  }
+  .toggle-more:hover{border-color:var(--gold);background:rgba(214,169,74,0.08);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Cinema<em>teca</em></h1>
+    <div class="count" id="countLabel">cargando…</div>
+  </header>
+
+  <div class="config-note" id="configNote">
+    Fuente de datos: editá la constante <code>CSV_URL</code> al final del archivo con el link "Publicar en la web → CSV" de tu Google Sheet.
+  </div>
+
+  <div class="section-block">
+    <div class="section-header">Búsqueda:</div>
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="Buscar por título, actor, director…" autocomplete="off">
+    </div>
+  </div>
+
+  <div class="section-block">
+    <div class="section-header">Filtros (Plataforma, Tipo de Contenido, Etiquetas/Tags, etc.):</div>
+
+    <div class="tags-panel">
+      <div class="label">Filtrar por plataforma</div>
+      <div class="tag-chips" id="platformChips"></div>
+    </div>
+
+    <div class="tags-panel">
+      <div class="label">Filtrar por tipo</div>
+      <div class="tag-chips" id="typeChips"></div>
+    </div>
+
+    <div class="tags-panel">
+      <div class="label-row">
+        <div class="label">Filtrar por tag</div>
+        <button class="clear-btn" id="clearTagsBtn" disabled>Limpiar selección</button>
+      </div>
+      <div class="tag-search-wrap">
+        <input type="text" class="tag-search-input" id="tagSearchInput" placeholder="Buscar tag (2+ caracteres)…" autocomplete="off">
+        <button class="tag-search-clear" id="tagSearchClear" aria-label="Borrar búsqueda" style="display:none;">✕</button>
+      </div>
+      <div class="tag-suggestions" id="tagSuggestions"></div>
+      <div class="tag-chips tag-chips-selected" id="tagSelectedChips"></div>
+      <div class="tag-chips" id="tagChips"></div>
+      <button class="tags-more-btn" id="tagsShowMoreBtn" style="display:none;">Mostrar más…</button>
+    </div>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div class="query-summary" id="querySummary"></div>
+
+  <div class="filter-warning" id="filterWarning"></div>
+
+  <div class="sort-row">
+    <label for="sortSelect">Ordenar por</label>
+    <select id="sortSelect">
+      <option value="relevance">Coincidencia (%)</option>
+      <option value="title_asc">Título (A → Z)</option>
+      <option value="title_desc">Título (Z → A)</option>
+      <option value="year_desc">Año (más reciente primero)</option>
+      <option value="year_asc">Año (más antiguo primero)</option>
+    </select>
+  </div>
+
+  <div class="results" id="results"></div>
+
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="ficha" id="fichaContent"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/7.0.0/fuse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script>
+/* =====================================================================
+   CONFIGURACIÓN
+   Pegá acá la URL de tu Google Sheet publicada como CSV.
+   Cómo obtenerla: en Google Sheets → Archivo → Compartir →
+   Publicar en la web → elegí la hoja → formato CSV → Publicar.
+   Copiá el link que te da y pegalo abajo.
+   ===================================================================== */
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQr_1_p67o6NmEqKIUlajgPTBcJlXplp85qT6LdeY6MpOAOcDauI1fSZLUg9-6gGqDncDADDsNdpsHS/pub?gid=2109237709&single=true&output=csv";
+
+/* Nombres de columnas esperados en tu planilla (ajustá si los tuyos
+   se llaman distinto). No hace falta que existan todas. */
+function normalizeKey(k){
+  return k
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // saca tildes
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ") // saca "/", puntuación, etc.
+    .trim();
+}
+
+function findKey(row, aliases){
+  const keys = Object.keys(row);
+  for(const alias of aliases){
+    const found = keys.find(k => normalizeKey(k) === normalizeKey(alias));
+    if(found) return found;
+  }
+  return null;
+}
+
+const COLUMNS = {
+  title: ["titulo", "title", "nombre", "pelicula"],
+  actors: ["actores", "actors", "reparto", "cast"],
+  mainActors: ["actores principales", "actores vinculados", "main actors", "protagonistas", "reparto principal"],
+  director: ["director", "directores"],
+  year: ["año", "ano", "year"],
+  type: ["tipo", "type"],
+  platform: ["plataforma", "platform", "servicio"],
+  tags: ["tags", "etiquetas", "genero", "género", "genres"]
+};
+
+// Grupos de variantes aceptadas para cada posición fija en la ficha de detalle
+const FICHA_ORDER_GROUPS = [
+  ["titulo"],
+  ["año", "ano"],
+  ["tipo"],
+  ["tematica"],
+  ["genero"],
+  ["actores vinculados", "actores"],
+  ["personajes vinculados", "personajes"],
+  ["guion creadores vinculados", "guion creadores", "guion y creadores vinculados"],
+  ["tags"]
+];
+
+// Grupos de variantes para los campos ocultos, en el orden en que deben mostrarse al expandir
+const FICHA_COLLAPSED_GROUPS = [
+  ["motivo del vinculo", "motivo"],
+  ["nivel del vinculo", "nivel de vinculo"]
+];
+const FICHA_COLLAPSED_INDEX = new Map();
+FICHA_COLLAPSED_GROUPS.forEach((variants, idx) => {
+  variants.forEach(v => FICHA_COLLAPSED_INDEX.set(normalizeKey(v), idx));
+});
+
+// Mapa: variante normalizada -> posición de orden
+const FICHA_ORDER_INDEX = new Map();
+FICHA_ORDER_GROUPS.forEach((variants, idx) => {
+  variants.forEach(v => FICHA_ORDER_INDEX.set(normalizeKey(v), idx));
+});
+
+/* ===================================================================== */
+
+let allMovies = [];
+let fuse = null;
+let activeTags = new Set();
+let activePlatforms = new Set();
+let activeTypes = new Set();
+let sortMode = "relevance";
+
+const LEADING_ARTICLES = ["the", "el", "la", "los", "las"];
+function titleSortKey(title){
+  const words = String(title).trim().split(/\s+/);
+  if(words.length > 1 && LEADING_ARTICLES.includes(normalizeKey(words[0]))){
+    return words.slice(1).join(" ").toLowerCase();
+  }
+  return String(title).trim().toLowerCase();
+}
+
+function parseYear(y){
+  const n = parseInt(String(y).match(/\d{4}/)?.[0] ?? y, 10);
+  return isNaN(n) ? null : n;
+}
+
+function applySort(results){
+  const sorted = [...results];
+  switch(sortMode){
+    case "title_asc":
+      sorted.sort((a,b) => titleSortKey(a.item.title).localeCompare(titleSortKey(b.item.title), "es"));
+      break;
+    case "title_desc":
+      sorted.sort((a,b) => titleSortKey(b.item.title).localeCompare(titleSortKey(a.item.title), "es"));
+      break;
+    case "year_desc":
+      sorted.sort((a,b) => (parseYear(b.item.year) ?? -Infinity) - (parseYear(a.item.year) ?? -Infinity));
+      break;
+    case "year_asc":
+      sorted.sort((a,b) => (parseYear(a.item.year) ?? Infinity) - (parseYear(b.item.year) ?? Infinity));
+      break;
+    default: // relevance
+      sorted.sort((a,b) => (a.score ?? 0) - (b.score ?? 0));
+  }
+  return sorted;
+}
+
+function splitMulti(value){
+  if(!value) return [];
+  return value.split(/[,;/|]/).map(s => s.trim()).filter(Boolean);
+}
+
+let allColumnKeys = []; // encabezados reales de la planilla, en orden
+
+function normalizeRows(rows){
+  if(rows.length === 0) return [];
+  const sample = rows[0];
+  allColumnKeys = Object.keys(sample);
+
+  const keyMap = {};
+  for(const field in COLUMNS){
+    keyMap[field] = findKey(sample, COLUMNS[field]);
+  }
+
+  return rows.map((row, i) => {
+    const title = keyMap.title ? row[keyMap.title] : (row[allColumnKeys[0]] || "Sin título");
+    const actors = keyMap.actors ? splitMulti(row[keyMap.actors]) : [];
+    const mainActors = keyMap.mainActors ? splitMulti(row[keyMap.mainActors]) : [];
+    const tags = keyMap.tags ? splitMulti(row[keyMap.tags]) : [];
+    const director = keyMap.director ? row[keyMap.director] : "";
+    const year = keyMap.year ? row[keyMap.year] : "";
+    const type = keyMap.type ? row[keyMap.type] : "";
+    const platform = keyMap.platform ? row[keyMap.platform] : "";
+    const platforms = keyMap.platform ? splitMulti(row[keyMap.platform]) : [];
+    return {
+      id: i,
+      title: title || "Sin título",
+      actors,
+      mainActors,
+      tags,
+      director: director || "",
+      year: year || "",
+      type: type || "",
+      platform: platform || "",
+      platforms,
+      raw: row // objeto completo con TODAS las columnas, para la búsqueda y la ficha
+    };
+  });
+}
+
+function buildFuse(movies){
+  // Las keys de búsqueda son todas las columnas reales de la planilla
+  // (accediendo a través de raw.<columna>), así el matching parcial/total
+  // corre sobre cualquier dato de cualquier columna, no solo título/tags/actores.
+  const searchKeys = allColumnKeys.map(col => `raw.${col}`);
+  return new Fuse(movies, {
+    includeScore: true,
+    threshold: 0.4,
+    ignoreLocation: true,
+    keys: searchKeys.length ? searchKeys : ["title"]
+  });
+}
+
+let allTagsSorted = [];
+
+function computeTagList(movies){
+  const tagSet = new Set();
+  movies.forEach(m => m.tags.forEach(t => tagSet.add(t)));
+  allTagsSorted = [...tagSet].sort((a,b) => a.localeCompare(b, "es"));
+}
+
+let tagsExpanded = false;
+const TAG_LINES_BUDGET = 12;
+
+function countChipLines(container){
+  const chips = Array.from(container.children);
+  if(chips.length === 0) return 0;
+  let lines = 1;
+  let lastTop = chips[0].offsetTop;
+  chips.forEach(el => {
+    if(el.offsetTop > lastTop + 2){
+      lines++;
+      lastTop = el.offsetTop;
+    }
+  });
+  return lines;
+}
+
+function applyTagsLineLimit(){
+  const selectedContainer = document.getElementById("tagSelectedChips");
+  const fullContainer = document.getElementById("tagChips");
+  const moreBtn = document.getElementById("tagsShowMoreBtn");
+
+  const chips = Array.from(fullContainer.children);
+  chips.forEach(el => { el.style.display = ""; });
+
+  if(tagsExpanded || chips.length === 0){
+    moreBtn.style.display = "none";
+    return;
+  }
+
+  const selectedLines = countChipLines(selectedContainer);
+  const budget = Math.max(0, TAG_LINES_BUDGET - selectedLines);
+
+  let lines = 1;
+  let lastTop = chips[0].offsetTop;
+  let cutoffIndex = null;
+  chips.forEach((el, idx) => {
+    if(el.offsetTop > lastTop + 2){
+      lines++;
+      lastTop = el.offsetTop;
+      if(lines > budget && cutoffIndex === null){
+        cutoffIndex = idx;
+      }
+    }
+  });
+
+  if(cutoffIndex !== null){
+    chips.slice(cutoffIndex).forEach(el => { el.style.display = "none"; });
+    moreBtn.style.display = "inline-block";
+  } else {
+    moreBtn.style.display = "none";
+  }
+}
+
+function toggleTag(tag){
+  if(activeTags.has(tag)) activeTags.delete(tag);
+  else activeTags.add(tag);
+  renderTagChips();
+  renderSelectedTagChips();
+  renderTagSuggestions(document.getElementById("tagSearchInput").value.trim());
+  updateClearTagsBtn();
+  applyTagsLineLimit();
+  runSearch();
+}
+
+function updateClearTagsBtn(){
+  document.getElementById("clearTagsBtn").disabled = activeTags.size === 0;
+}
+
+function makeTagChip(tag){
+  const chip = document.createElement("button");
+  chip.className = "chip" + (activeTags.has(tag) ? " active" : "");
+  chip.textContent = tag;
+  chip.onclick = () => toggleTag(tag);
+  return chip;
+}
+
+function renderTagChips(){
+  const container = document.getElementById("tagChips");
+  container.innerHTML = "";
+  if(allTagsSorted.length === 0){
+    container.innerHTML = '<span style="font-family:var(--mono);font-size:0.75rem;color:var(--ink-dim)">No se detectaron tags en la planilla.</span>';
+    return;
+  }
+  allTagsSorted.forEach(tag => container.appendChild(makeTagChip(tag)));
+}
+
+function renderSelectedTagChips(){
+  const container = document.getElementById("tagSelectedChips");
+  container.innerHTML = "";
+  // Uno a continuación del otro, en el mismo orden que la lista completa
+  allTagsSorted
+    .filter(tag => activeTags.has(tag))
+    .forEach(tag => container.appendChild(makeTagChip(tag)));
+}
+
+function renderTagSuggestions(query){
+  const container = document.getElementById("tagSuggestions");
+  container.innerHTML = "";
+  if(query.length < 2) return;
+
+  const nq = normalizeKey(query);
+  const matches = allTagsSorted.filter(t => normalizeKey(t).includes(nq));
+
+  if(matches.length === 0){
+    container.innerHTML = '<span style="font-family:var(--mono);font-size:0.72rem;color:var(--ink-dim)">Sin coincidencias.</span>';
+    return;
+  }
+  matches.forEach(tag => container.appendChild(makeTagChip(tag)));
+}
+
+function renderPlatformChips(movies){
+  const platformSet = new Set();
+  movies.forEach(m => m.platforms.forEach(p => platformSet.add(p)));
+  const container = document.getElementById("platformChips");
+  container.innerHTML = "";
+  if(platformSet.size === 0){
+    container.innerHTML = '<span style="font-family:var(--mono);font-size:0.75rem;color:var(--ink-dim)">No se detectaron plataformas en la planilla.</span>';
+    return;
+  }
+  [...platformSet].sort().forEach(platform => {
+    const chip = document.createElement("button");
+    chip.className = "chip";
+    chip.textContent = platform;
+    chip.onclick = () => {
+      if(activePlatforms.has(platform)) activePlatforms.delete(platform);
+      else activePlatforms.add(platform);
+      chip.classList.toggle("active");
+      otherFiltersJustCleared = false;
+      runSearch();
+    };
+    container.appendChild(chip);
+  });
+}
+
+function renderTypeChips(movies){
+  const typeSet = new Set();
+  movies.forEach(m => { if(m.type) typeSet.add(m.type); });
+  const container = document.getElementById("typeChips");
+  container.innerHTML = "";
+  if(typeSet.size === 0){
+    container.innerHTML = '<span style="font-family:var(--mono);font-size:0.75rem;color:var(--ink-dim)">No se detectó la columna Tipo en la planilla.</span>';
+    return;
+  }
+  [...typeSet].sort().forEach(type => {
+    const chip = document.createElement("button");
+    chip.className = "chip";
+    chip.textContent = type;
+    chip.onclick = () => {
+      if(activeTypes.has(type)) activeTypes.delete(type);
+      else activeTypes.add(type);
+      chip.classList.toggle("active");
+      otherFiltersJustCleared = false;
+      runSearch();
+    };
+    container.appendChild(chip);
+  });
+}
+
+function runSearch(){
+  const query = document.getElementById("searchInput").value.trim();
+  let candidates = allMovies;
+
+  // Filtro por plataforma: OR entre las seleccionadas (alcanza con matchear una)
+  if(activePlatforms.size > 0){
+    candidates = candidates.filter(m =>
+      m.platforms.some(p => activePlatforms.has(p))
+    );
+  }
+
+  // Filtro por tipo: OR entre los seleccionados
+  if(activeTypes.size > 0){
+    candidates = candidates.filter(m => activeTypes.has(m.type));
+  }
+
+  let results;
+  let showPercentWithoutQuery = false;
+
+  if(query.length === 0){
+    if(activeTags.size === 0){
+      // Sin texto y sin tags: comportamiento actual, sin indicador de %
+      results = candidates.map(m => ({ item: m, score: 0 }));
+    } else {
+      // Sin texto, con tags: % de coincidencia = tags matcheados / tags seleccionados.
+      // Coincidencia parcial permitida (no exige matchear TODOS los tags).
+      showPercentWithoutQuery = true;
+      results = candidates
+        .map(m => {
+          const matchedCount = [...activeTags].filter(tag => m.tags.includes(tag)).length;
+          return { item: m, matchedCount };
+        })
+        .filter(r => r.matchedCount > 0)
+        .map(r => ({ item: r.item, score: 1 - (r.matchedCount / activeTags.size) }));
+    }
+  } else {
+    // Con texto: se mantiene el comportamiento actual (tags exige coincidir con TODOS)
+    if(activeTags.size > 0){
+      candidates = candidates.filter(m =>
+        [...activeTags].every(tag => m.tags.includes(tag))
+      );
+    }
+    const localFuse = buildFuse(candidates);
+    results = localFuse.search(query);
+  }
+
+  renderResults(results, query, showPercentWithoutQuery);
+}
+
+function renderQuerySummary(query){
+  const container = document.getElementById("querySummary");
+  let html = "";
+
+  if(query){
+    html += `
+      <div class="qs-line-row">
+        <span class="qs-line">Texto buscado:</span>
+        <button class="qs-clear-btn" id="qsClearText" aria-label="Borrar texto buscado">✕</button>
+      </div>
+      <div class="qs-value">"${escapeHtml(query)}"</div>
+    `;
+  }
+
+  if(activeTags.size > 0){
+    const tagsHtml = [...activeTags]
+      .sort((a,b) => a.localeCompare(b, "es"))
+      .map(t => `<span class="qs-tag">${escapeHtml(t)}</span>`)
+      .join("");
+    html += `
+      <div class="qs-line-row">
+        <span class="qs-line">Tags seleccionados:</span>
+        <button class="qs-clear-btn" id="qsClearTags" aria-label="Borrar tags seleccionados">✕</button>
+      </div>
+      <div class="qs-tags-row">${tagsHtml}</div>
+    `;
+  }
+
+  container.innerHTML = html;
+
+  if(query){
+    document.getElementById("qsClearText").addEventListener("click", () => {
+      const input = document.getElementById("searchInput");
+      input.value = "";
+      runSearch();
+      input.focus();
+    });
+  }
+
+  if(activeTags.size > 0){
+    document.getElementById("qsClearTags").addEventListener("click", () => {
+      clearAllTags();
+    });
+  }
+}
+
+let otherFiltersJustCleared = false;
+
+function clearOtherFilters(){
+  activePlatforms.clear();
+  activeTypes.clear();
+  renderPlatformChips(allMovies);
+  renderTypeChips(allMovies);
+  otherFiltersJustCleared = true;
+  runSearch();
+}
+
+function renderFilterWarning(resultsCount){
+  const container = document.getElementById("filterWarning");
+  const hasOtherFilters = activePlatforms.size > 0 || activeTypes.size > 0;
+
+  if(resultsCount === 0 && hasOtherFilters){
+    container.innerHTML = `
+      <div class="fw-box">
+        <div class="fw-message">Otros Filtros aplicados (Plataforma, Tipo, etc.) - REVISAR SELECCIÓN o Limpiar estos filtros presionando la '<strong>x</strong>'</div>
+        <button class="fw-clear-btn" id="fwClearBtn" aria-label="Limpiar filtros de plataforma y tipo">✕</button>
+      </div>
+    `;
+    document.getElementById("fwClearBtn").addEventListener("click", clearOtherFilters);
+    return;
+  }
+
+  if(otherFiltersJustCleared){
+    container.innerHTML = `<div class="fw-cleared-msg">No se aplicaron otros filtros.</div>`;
+    return;
+  }
+
+  container.innerHTML = "";
+}
+
+function renderResults(results, query, showPercentWithoutQuery){
+  const container = document.getElementById("results");
+  const status = document.getElementById("status");
+  container.innerHTML = "";
+
+  status.textContent = query
+    ? `${results.length} resultado(s) para "${query}"`
+    : `${results.length} ítem(s) cinematográfico(s) con coincidencia`;
+  status.classList.remove("err");
+
+  renderQuerySummary(query);
+  renderFilterWarning(results.length);
+
+  if(results.length === 0){
+    container.innerHTML = '<div class="empty">No se encontraron coincidencias. Probá con otro término o quitá filtros.</div>';
+    return;
+  }
+
+  applySort(results)
+    .forEach(({item, score}) => {
+      const matchPct = (query || showPercentWithoutQuery) ? Math.round((1 - score) * 100) : null;
+      const scoreColor = matchPct !== null ? matchColor(matchPct) : null;
+      const card = document.createElement("div");
+      card.className = "card";
+      card.addEventListener("click", () => openFicha(item));
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="match-score" style="${scoreColor ? `border-color:${scoreColor};color:${scoreColor};` : ""}">${matchPct !== null ? matchPct + "%" : "—"}</div>
+          <div class="card-body">
+            <p class="title">${escapeHtml(item.title)}</p>
+            <div class="meta">
+              <span class="meta-line">${item.year ? `<b>${escapeHtml(String(item.year))}</b>` : ""}${item.year && item.type ? " · " : ""}${item.type ? escapeHtml(item.type) : ""}${item.platform ? ` · ${escapeHtml(item.platform)}` : ""}</span>
+              ${(item.mainActors.length || item.actors.length) ? `<span class="meta-line">${escapeHtml((item.mainActors.length ? item.mainActors : item.actors).join(", "))}</span>` : ""}
+            </div>
+          </div>
+        </div>
+        ${item.tags.length ? `
+          <div class="card-tags">
+            ${item.tags.map(t => `<span class="${activeTags.has(t) ? 'hit' : ''}">${escapeHtml(t)}</span>`).join("")}
+          </div>
+        ` : ""}
+      `;
+      container.appendChild(card);
+    });
+}
+
+function openFicha(item){
+  const content = document.getElementById("fichaContent");
+  const entries = Object.entries(item.raw)
+    .filter(([k, v]) => v !== null && v !== undefined && String(v).trim() !== "");
+
+  const visible = [];
+  const collapsed = [];
+  const rest = [];
+
+  entries.forEach(([k, v]) => {
+    const nk = normalizeKey(k);
+    if(FICHA_COLLAPSED_INDEX.has(nk)){
+      collapsed.push([k, v]);
+    } else if(FICHA_ORDER_INDEX.has(nk)){
+      visible.push([k, v]);
+    } else {
+      rest.push([k, v]);
+    }
+  });
+
+  // Ordenar 'visible' según la posición definida en FICHA_ORDER_GROUPS
+  visible.sort((a, b) => FICHA_ORDER_INDEX.get(normalizeKey(a[0])) - FICHA_ORDER_INDEX.get(normalizeKey(b[0])));
+  // Ordenar 'collapsed': Motivo del Vínculo antes que Nivel de Vínculo
+  collapsed.sort((a, b) => FICHA_COLLAPSED_INDEX.get(normalizeKey(a[0])) - FICHA_COLLAPSED_INDEX.get(normalizeKey(b[0])));
+
+  const renderField = ([k, v]) => `
+    <div class="field">
+      <dt>${escapeHtml(k)}</dt>
+      <dd>${escapeHtml(String(v))}</dd>
+    </div>
+  `;
+
+  const visibleHtml = [...visible, ...rest].map(renderField).join("");
+  const collapsedHtml = collapsed.map(renderField).join("");
+
+  content.innerHTML = `
+    <button class="close-btn" id="fichaClose" aria-label="Cerrar">✕</button>
+    <h2>${escapeHtml(item.title)}</h2>
+    <div class="ficha-sub">${[item.year, item.director].filter(Boolean).map(escapeHtml).join(" · ")}</div>
+    <dl>${visibleHtml}</dl>
+    ${collapsed.length ? `
+      <button class="toggle-more" id="toggleMore">Mostrar más ▾</button>
+      <dl id="fichaCollapsed" style="display:none;">${collapsedHtml}</dl>
+    ` : ""}
+  `;
+
+  document.getElementById("overlay").classList.add("open");
+  document.getElementById("fichaClose").addEventListener("click", closeFicha);
+
+  if(collapsed.length){
+    const toggleBtn = document.getElementById("toggleMore");
+    const collapsedBlock = document.getElementById("fichaCollapsed");
+    toggleBtn.addEventListener("click", () => {
+      const isOpen = collapsedBlock.style.display !== "none";
+      collapsedBlock.style.display = isOpen ? "none" : "block";
+      toggleBtn.textContent = isOpen ? "Mostrar más ▾" : "Mostrar menos ▴";
+    });
+  }
+}
+
+function closeFicha(){
+  document.getElementById("overlay").classList.remove("open");
+}
+
+function matchColor(pct){
+  // 100% -> verde (hsl 120), 0% -> rojo (hsl 0), interpolación lineal
+  const hue = Math.max(0, Math.min(100, pct)) * 1.2;
+  return `hsl(${hue}, 65%, 50%)`;
+}
+
+function escapeHtml(str){
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function loadData(){
+  const status = document.getElementById("status");
+  const countLabel = document.getElementById("countLabel");
+
+  if(!CSV_URL || CSV_URL === "PEGA_ACA_TU_URL_CSV"){
+    status.textContent = "Falta configurar CSV_URL en el código (ver nota arriba).";
+    status.classList.add("err");
+    countLabel.textContent = "sin datos";
+    return;
+  }
+
+  Papa.parse(CSV_URL, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function(res){
+      allMovies = normalizeRows(res.data);
+      fuse = buildFuse(allMovies);
+      countLabel.textContent = `${allMovies.length} Títulos`;
+      document.getElementById("configNote").style.display = "none";
+      renderPlatformChips(allMovies);
+      renderTypeChips(allMovies);
+      computeTagList(allMovies);
+      renderTagChips();
+      applyTagsLineLimit();
+      runSearch();
+    },
+    error: function(err){
+      status.textContent = "Error al cargar la planilla: " + err.message;
+      status.classList.add("err");
+      countLabel.textContent = "error";
+    }
+  });
+}
+
+document.getElementById("searchInput").addEventListener("input", () => {
+  runSearch();
+});
+
+document.getElementById("sortSelect").addEventListener("change", (e) => {
+  sortMode = e.target.value;
+  runSearch();
+});
+
+document.getElementById("tagSearchInput").addEventListener("input", (e) => {
+  const value = e.target.value;
+  document.getElementById("tagSearchClear").style.display = value.length ? "block" : "none";
+  renderTagSuggestions(value.trim());
+});
+
+document.getElementById("tagSearchClear").addEventListener("click", () => {
+  const input = document.getElementById("tagSearchInput");
+  input.value = "";
+  document.getElementById("tagSearchClear").style.display = "none";
+  renderTagSuggestions("");
+  input.focus();
+});
+
+function clearAllTags(){
+  if(activeTags.size === 0) return;
+  activeTags.clear();
+  renderTagChips();
+  renderSelectedTagChips();
+  renderTagSuggestions(document.getElementById("tagSearchInput").value.trim());
+  updateClearTagsBtn();
+  applyTagsLineLimit();
+  runSearch();
+}
+
+document.getElementById("clearTagsBtn").addEventListener("click", clearAllTags);
+document.getElementById("tagsShowMoreBtn").addEventListener("click", () => {
+  tagsExpanded = true;
+  applyTagsLineLimit();
+});
+
+let resizeTimer = null;
+window.addEventListener("resize", () => {
+  if(tagsExpanded) return;
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(applyTagsLineLimit, 150);
+});
+
+document.getElementById("overlay").addEventListener("click", (e) => {
+  if(e.target.id === "overlay") closeFicha();
+});
+
+document.addEventListener("keydown", (e) => {
+  if(e.key === "Escape") closeFicha();
+});
+
+loadData();
+</script>
+</body>
+</html>
